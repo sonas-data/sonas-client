@@ -4,6 +4,9 @@ from websockets.sync.client import connect
 from datetime import datetime
 from datetime import date
 import json
+import logging
+
+from websockets.exceptions import ConnectionClosed, InvalidStatus
 
 
 class SonasClient:
@@ -86,22 +89,35 @@ class SonasClient:
     ):
         """Runs a websocket clients listining to a stream of prices of subscribed products and terms"""
         try:
-            with connect(f"{self._ws_url}/prices/stream", additional_headers=self._get_headers()) as ws:
+            with connect(
+                f"{self._ws_url}/prices/stream", additional_headers=self._get_headers()
+            ) as ws:
                 on_open(ws)
                 for product in products:
                     for term in terms:
-                        message = json.dumps({
+                        message = json.dumps(
+                            {
                                 "action": "SUBSCRIBE",
                                 "product": product,
                                 "term": term,
-                            })
+                            }
+                        )
                         ws.send(message)
 
                 while True:
-                    data = ws.recv()
+                    data = ws.recv(decode=True)
                     on_message(data)
 
+        except ConnectionClosed as e:
+            on_close(e.code, e.reason)
+        except InvalidStatus as e:
+            if e.response.status_code == 401:
+                logging.error("User is unauthorized")
+            elif e.response.status_code == 403:
+                logging.error(
+                    "User might might not have permissions to get "
+                    "streaming prices or the user is already signed in"
+                )
+            on_error(e)
         except Exception as e:
             on_error(e)
-        finally:
-            on_close()
