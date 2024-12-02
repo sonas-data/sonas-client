@@ -97,9 +97,9 @@ class SonasClient:
                             })
                         ws.send(message)
 
-                    while True:
-                        data = ws.recv()
-                        on_message(data)
+                while True:
+                    data = ws.recv()
+                    on_message(data)
 
         except Exception as e:
             on_error(e)
