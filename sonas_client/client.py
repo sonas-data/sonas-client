@@ -2,6 +2,7 @@ import base64
 import requests
 from websockets.sync.client import connect
 from datetime import datetime
+from datetime import date
 import json
 
 
@@ -36,13 +37,15 @@ class SonasClient:
             self.login()
         return {"Authorization": f"Bearer {self.token}"}
 
-    def get_snapshot(self, products: list[str] = [], terms: list[str] = []):
+    def get_snapshot(self, day: date, products: list[str] = [], terms: list[str] = []):
         """Get the snapshot of all products and terms"""
         params = {}
         if products:
             params["products"] = products
         if terms:
             params["terms"] = terms
+        if day:
+            params["day"] = day.isoformat()
 
         res = requests.get(
             f"{self._http_url}/prices/snapshot",
