@@ -40,6 +40,16 @@ class SonasClient:
             self.login()
         return {"Authorization": f"Bearer {self.token}"}
 
+    def get_data_permissions(self):
+        res = requests.get(
+            f"{self._http_url}/data-permissions",
+            headers=self._get_headers(),
+        )
+        if res.status_code != 200:
+            raise Exception(f"Failed to get data permissions: {res.text}")
+        data = res.json()["data"]
+        return data
+
     def get_snapshot(self, day: date, products: list[str] = [], terms: list[str] = []):
         """Get the snapshot of all products and terms"""
         params = {}
