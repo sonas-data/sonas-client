@@ -1,8 +1,7 @@
 import base64
 import requests
 from websockets.sync.client import connect
-from datetime import datetime
-from datetime import date
+from datetime import datetime, date, time
 import json
 import logging
 
@@ -10,6 +9,8 @@ from websockets.exceptions import ConnectionClosed, InvalidStatus
 
 
 class SonasClient:
+    """Client for the Sonas API"""
+
     def __init__(self, username: str, password: str, host: str):
         self.username = username
         self.password = password
@@ -50,7 +51,14 @@ class SonasClient:
         data = res.json()["data"]
         return data
 
-    def get_snapshot(self, day: date, products: list[str] = [], terms: list[str] = []):
+    def get_snapshot(
+        self,
+        day: date,
+        start: time = time(7, 0, 0),
+        end: time = time(20, 30, 0),
+        products: list[str] = [],
+        terms: list[str] = [],
+    ):
         """Get the snapshot of all products and terms"""
         params = {}
         if products:
@@ -59,6 +67,10 @@ class SonasClient:
             params["terms"] = terms
         if day:
             params["day"] = day.isoformat()
+        if start:
+            params["start"] = start.isoformat()
+        if end:
+            params["end"] = end.isoformat()
 
         res = requests.get(
             f"{self._http_url}/prices/snapshot",
