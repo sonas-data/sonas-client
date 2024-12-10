@@ -5,12 +5,10 @@ from datetime import datetime, date, time
 import json
 import logging
 
-from websockets.exceptions import ConnectionClosed, InvalidStatus
+from websockets.exceptions import InvalidStatus
 
 
 class SonasClient:
-    """Client for the Sonas API"""
-
     def __init__(self, username: str, password: str, host: str):
         self.username = username
         self.password = password
@@ -21,7 +19,8 @@ class SonasClient:
         self._ws_url = (
             f"{"ws" if host.startswith('localhost') else "wss"}://{host}/api/v1"
         )
-        self.token = None
+        self._token = None
+        self._stop_streaming = True
 
     def login(self):
         """Login to the API"""
@@ -34,12 +33,12 @@ class SonasClient:
         )
         if response.status_code != 200:
             raise Exception(f"Failed to login: {response.text}")
-        self.token = response.json()["data"]["token"]
+        self._token = response.json()["data"]["token"]
 
     def _get_headers(self):
-        if self.token is None:
+        if self._token is None:
             self.login()
-        return {"Authorization": f"Bearer {self.token}"}
+        return {"Authorization": f"Bearer {self._token}"}
 
     def get_data_permissions(self):
         res = requests.get(
@@ -100,21 +99,19 @@ class SonasClient:
         data = res.json()["data"]
         return data
 
-    def on_stream_prices(
+    def stream_prices(
         self,
         products: list[str],
         terms: list[str],
-        on_open: callable,
         on_message: callable,
         on_error: callable,
-        on_close: callable,
     ):
         """Runs a websocket clients listining to a stream of prices of subscribed products and terms"""
+        self._stop_streaming = False
         try:
             with connect(
                 f"{self._ws_url}/prices/stream", additional_headers=self._get_headers()
             ) as ws:
-                on_open(ws)
                 for product in products:
                     for term in terms:
                         message = json.dumps(
@@ -126,12 +123,10 @@ class SonasClient:
                         )
                         ws.send(message)
 
-                while True:
+                while not self._stop_streaming:
                     data = ws.recv(decode=True)
                     on_message(data)
 
-        except ConnectionClosed as e:
-            on_close(e.code, e.reason)
         except InvalidStatus as e:
             if e.response.status_code == 401:
                 logging.error("User is unauthorized")
@@ -143,3 +138,6 @@ class SonasClient:
             on_error(e)
         except Exception as e:
             on_error(e)
+
+    def stop_stream_prices(self):
+        self._stop_streaming = True

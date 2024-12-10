@@ -1,6 +1,5 @@
 from sonas_client import SonasClient
 from datetime import datetime, timedelta, date, time
-import websockets.sync.client as websockets
 import os
 
 username = os.environ["SONAS_USERNAME"]
@@ -20,7 +19,6 @@ print(
 )  # max 10 snapshots are allowed at a time
 
 count = 0
-conn: websockets.ClientConnection | None = None
 
 
 def on_message(msg):
@@ -28,18 +26,7 @@ def on_message(msg):
     count += 1
     print(count, msg)
     if count > 2000:
-        conn.close()
-
-
-def on_open(ws: websockets.ClientConnection):
-    global conn
-    conn = ws
-    print("stream opened")
-
-
-def on_close(code, reason):
-    print("stream closed")
-    print(code, reason)
+        client.stop_stream_prices()
 
 
 def on_error(e):
@@ -47,15 +34,13 @@ def on_error(e):
 
 
 print("\n--- Stream ---")
-client.on_stream_prices(
+client.stream_prices(
     products=["BS", "BOB", "GS", "OS"],
     terms=[
         f"{month}-{year % 100}"
         for year in [2025, 2026, 2027]
         for month in ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
     ],
-    on_close=on_close,
-    on_open=on_open,
     on_message=on_message,
     on_error=on_error,
 )
