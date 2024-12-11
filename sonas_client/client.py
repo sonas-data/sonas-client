@@ -112,16 +112,18 @@ class SonasClient:
             with connect(
                 f"{self._ws_url}/prices/stream", additional_headers=self._get_headers()
             ) as ws:
+                subscriptions = []
                 for product in products:
                     for term in terms:
-                        message = json.dumps(
-                            {
-                                "action": "SUBSCRIBE",
-                                "product": product,
-                                "term": term,
-                            }
-                        )
-                        ws.send(message)
+                        subscription = {
+                            "product": product,
+                            "term": term,
+                        }
+                        subscriptions.append(subscription)
+                message = json.dumps(
+                    {"action": "SUBSCRIBE", "subscriptions": subscriptions}
+                )
+                ws.send(message)
 
                 while not self._stop_streaming:
                     data = ws.recv(decode=True)

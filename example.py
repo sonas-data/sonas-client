@@ -8,10 +8,20 @@ host = os.environ["SONAS_HOST"]
 client = SonasClient(username, password, host)
 
 print("\n--- Data permissions ---")
-print(client.get_data_permissions())
+data_permissions = client.get_data_permissions()
+print(data_permissions)
 
 print("\n--- Historical ---")
-print(len(client.get_historical("BS", "Nov-24", start=datetime.now() - timedelta(days=30), end=datetime.now())))
+print(
+    len(
+        client.get_historical(
+            "BS",
+            "Nov-24",
+            start=datetime.now() - timedelta(days=30),
+            end=datetime.now(),
+        )
+    )
+)
 
 print("\n--- Snapshot ---")
 print(
@@ -25,7 +35,7 @@ def on_message(msg):
     global count
     count += 1
     print(count, msg)
-    if count > 2000:
+    if count > 5000:
         client.stop_stream_prices()
 
 
@@ -35,11 +45,24 @@ def on_error(e):
 
 print("\n--- Stream ---")
 client.stream_prices(
-    products=["BS", "BOB", "GS", "OS"],
+    products=data_permissions["products"],
     terms=[
         f"{month}-{year % 100}"
-        for year in [2025, 2026, 2027]
-        for month in ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        for year in range(2025, 2030)
+        for month in [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+        ]
     ],
     on_message=on_message,
     on_error=on_error,
