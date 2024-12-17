@@ -9,6 +9,7 @@ client = SonasClient(username, password, host)
 
 print("\n--- Data permissions ---")
 data_permissions = client.get_data_permissions()
+products = data_permissions["products"]
 print(data_permissions)
 
 print("\n--- Historical ---")
@@ -16,7 +17,7 @@ print(
     len(
         client.get_historical(
             "BS",
-            "Nov-24",
+            "Dec-24",
             start=datetime.now() - timedelta(days=30),
             end=datetime.now(),
         )
@@ -35,7 +36,7 @@ def on_message(msg):
     global count
     count += 1
     print(count, msg)
-    if count > 5000:
+    if count > 5_000_000:
         client.stop_stream_prices()
 
 
@@ -43,9 +44,8 @@ def on_error(e):
     print(e)
 
 
-print("\n--- Stream ---")
 client.stream_prices(
-    products=data_permissions["products"],
+    products=products,
     terms=[
         f"{month}-{year % 100}"
         for year in range(2025, 2030)

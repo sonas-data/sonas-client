@@ -108,6 +108,7 @@ class SonasClient:
     ):
         """Runs a websocket clients listining to a stream of prices of subscribed products and terms"""
         self._stop_streaming = False
+        MAX_PRODUCTS_PER_SUBSCRIPTION = 1000
         try:
             with connect(
                 f"{self._ws_url}/prices/stream", additional_headers=self._get_headers()
@@ -120,10 +121,12 @@ class SonasClient:
                             "term": term,
                         }
                         subscriptions.append(subscription)
-                message = json.dumps(
-                    {"action": "SUBSCRIBE", "subscriptions": subscriptions}
-                )
-                ws.send(message)
+                n = len(subscriptions)
+                for i in range(0, n, MAX_PRODUCTS_PER_SUBSCRIPTION):
+                    message = json.dumps(
+                        {"action": "SUBSCRIBE", "subscriptions": subscriptions[i: i + MAX_PRODUCTS_PER_SUBSCRIPTION]}
+                    )
+                    ws.send(message)
 
                 while not self._stop_streaming:
                     data = ws.recv(decode=True)
