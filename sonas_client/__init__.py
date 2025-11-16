@@ -1,3 +1,3 @@
-from .client import SonasClient
+from .client import SonasClient, SonasAdminClient
 
-__all__ = ["SonasClient"]
+__all__ = ["SonasClient", "SonasAdminClient"]
