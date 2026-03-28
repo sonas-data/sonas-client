@@ -124,7 +124,12 @@ class SonasClient:
                 n = len(subscriptions)
                 for i in range(0, n, MAX_PRODUCTS_PER_SUBSCRIPTION):
                     message = json.dumps(
-                        {"action": "SUBSCRIBE", "subscriptions": subscriptions[i: i + MAX_PRODUCTS_PER_SUBSCRIPTION]}
+                        {
+                            "action": "SUBSCRIBE",
+                            "subscriptions": subscriptions[
+                                i:i + MAX_PRODUCTS_PER_SUBSCRIPTION
+                            ],
+                        }
                     )
                     ws.send(message)
 
@@ -146,6 +151,17 @@ class SonasClient:
 
     def stop_stream_prices(self):
         self._stop_streaming = True
+
+    def get_products(self):
+        """Get historical prices for a product and term"""
+        res = requests.get(
+            f"{self._http_url}/products",
+            headers=self._get_headers(),
+        )
+        if res.status_code != 200:
+            raise Exception(f"Failed to get snapshot: {res.text}")
+        data = res.json()["data"]
+        return data
 
 
 class SonasAdminClient:

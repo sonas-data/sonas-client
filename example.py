@@ -6,11 +6,11 @@ username = os.environ["SONAS_USERNAME"]
 password = os.environ["SONAS_PASSWORD"]
 host = os.environ["SONAS_HOST"]
 client = SonasClient(username, password, host)
-admin_client = SonasAdminClient(username, password, host)
+# admin_client = SonasAdminClient(username, password, host)
 # print("\n--- Data permissions ---")
-# data_permissions = client.get_data_permissions()
+data_permissions = client.get_data_permissions()
 # products = data_permissions["products"]
-# # print(data_permissions)
+print(data_permissions)
 
 # # print("\n--- Historical ---")
 # # print(
@@ -46,28 +46,31 @@ admin_client = SonasAdminClient(username, password, host)
 
 # client.stream_prices(
 #     products=["BS"],
-#     # terms=["Nov-25"],
-#     terms=[
-#         f"{month}-{year % 100}"
-#         for year in range(2025, 2030)
-#         for month in [
-#             "Jan",
-#             "Feb",
-#             "Mar",
-#             "Apr",
-#             "May",
-#             "Jun",
-#             "Jul",
-#             "Aug",
-#             "Sep",
-#             "Oct",
-#             "Nov",
-#             "Dec",
-#         ]
-#     ],
+#     terms=["Nov-26"],
+#     # terms=[
+#     #     f"{month}-{year % 100}"
+#     #     for year in range(2025, 2030)
+#     #     for month in [
+#     #         "Jan",
+#     #         "Feb",
+#     #         "Mar",
+#     #         "Apr",
+#     #         "May",
+#     #         "Jun",
+#     #         "Jul",
+#     #         "Aug",
+#     #         "Sep",
+#     #         "Oct",
+#     #         "Nov",
+#     #         "Dec",
+#     #     ]
+#     # ],
 #     on_message=on_message,
 #     on_error=on_error,
 # )
 
 # 2025-10-30T04:00:00+00:00
 # admin_client.update_historical(prices=[{ "price": 23, "product": "BS", "term": "Aug-25", "ts": datetime(2025, 10, 30, 4, 0, 0, 0)}])
+
+products = client.get_products()
+print(products)
