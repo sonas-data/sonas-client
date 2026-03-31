@@ -1,9 +1,11 @@
 import base64
 import requests
 from websockets.sync.client import connect
+import websockets
 from datetime import datetime, date, time
 import json
 import logging
+import asyncio
 
 from websockets.exceptions import InvalidStatus
 
@@ -111,7 +113,8 @@ class SonasClient:
         MAX_PRODUCTS_PER_SUBSCRIPTION = 1000
         try:
             with connect(
-                f"{self._ws_url}/prices/stream", additional_headers=self._get_headers()
+                f"{self._ws_url}/prices/stream",
+                additional_headers=self._get_headers(),
             ) as ws:
                 subscriptions = []
                 for product in products:
@@ -127,7 +130,7 @@ class SonasClient:
                         {
                             "action": "SUBSCRIBE",
                             "subscriptions": subscriptions[
-                                i:i + MAX_PRODUCTS_PER_SUBSCRIPTION
+                                i: i + MAX_PRODUCTS_PER_SUBSCRIPTION
                             ],
                         }
                     )
@@ -148,6 +151,73 @@ class SonasClient:
             on_error(e)
         except Exception as e:
             on_error(e)
+
+    def stream_prices_alt(
+        self,
+        products: list[str],
+        terms: list[str],
+        on_message: callable,
+        on_error: callable,
+        internal_queue_size: int = 10000,
+    ):
+        """Runs a websocket clients listining to a stream of prices of subscribed products and terms"""
+        self._stop_streaming = False
+        MAX_PRODUCTS_PER_SUBSCRIPTION = 1000
+
+        queue = asyncio.Queue(maxsize=internal_queue_size)
+
+        async def worker():
+            while not self._stop_streaming:
+                msg = await queue.get()
+                on_message(msg)
+
+        async def loop():
+            try:
+                async with websockets.connect(
+                    f"{self._ws_url}/prices/stream",
+                    additional_headers=self._get_headers(),
+                ) as ws:
+                    subscriptions = []
+                    for product in products:
+                        for term in terms:
+                            subscription = {
+                                "product": product,
+                                "term": term,
+                            }
+                            subscriptions.append(subscription)
+                    n = len(subscriptions)
+                    for i in range(0, n, MAX_PRODUCTS_PER_SUBSCRIPTION):
+                        message = json.dumps(
+                            {
+                                "action": "SUBSCRIBE",
+                                "subscriptions": subscriptions[
+                                    i: i + MAX_PRODUCTS_PER_SUBSCRIPTION
+                                ],
+                            }
+                        )
+                        await ws.send(message)
+
+                    while not self._stop_streaming:
+                        data = await ws.recv(decode=True)
+                        queue.put_nowait(data)
+            except InvalidStatus as e:
+                if e.response.status_code == 401:
+                    logging.error("User is unauthorized")
+                elif e.response.status_code == 403:
+                    logging.error(
+                        "User might might not have permissions to get "
+                        "streaming prices or the user is already signed in"
+                    )
+                on_error(e)
+            except Exception as e:
+                on_error(e)
+
+        async def run():
+            await asyncio.gather(
+                asyncio.create_task(loop()), asyncio.create_task(worker())
+            )
+
+        asyncio.run(run())
 
     def stop_stream_prices(self):
         self._stop_streaming = True
