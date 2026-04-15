@@ -29,11 +29,6 @@ terms = [
     ]
     if f"{month}-{year % 100}" not in ["Jan-26", "Feb-26", "Mar-26"]
 ]
-track_prices_map = {
-    f"{product["code"]}:{term}": "" for product in products for term in terms
-}
-
-print("subscribed products", len(track_prices_map))
 
 
 def on_message(msg):
