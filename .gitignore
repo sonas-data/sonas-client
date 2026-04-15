@@ -2,3 +2,5 @@ tmp
 .env
 **/__pycache__
 envs
+.venv
+.vscode
